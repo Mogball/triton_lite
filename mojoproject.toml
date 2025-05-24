@@ -1,0 +1,33 @@
+[project]
+authors = ["Jeff Niu <jeffniu@openai.com>"]
+channels = ["https://conda.modular.com/max-nightly", "https://conda.modular.com/max", "https://repo.prefix.dev/modular-community", "conda-forge"]
+name = "mojo"
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+max = "*"
+python = ">=3.13.3,<3.14"
+pytorch = "*"
+
+[system-requirements]
+cuda = "12.0"
+
+[target.linux-64.dependencies]
+cuda-version = "12.*"
+cudatoolkit-dev = "*"
+pytorch-gpu = "*"
+transformers = "*"
+accelerate = "*"
+triton = "*"
+
+[tool.pixi.scripts.env]
+# point at the CUDA toolkit root
+CUDA_HOME = "/usr/local/cuda"            # if you installed via apt
+# or, if you used cudatoolkit-dev:
+# CUDA_HOME = "${CONDA_PREFIX}"
+
+# Triton also respects TRITON_CUDA_HOME
+TRITON_CUDA_HOME = "${CUDA_HOME}"

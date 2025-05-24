@@ -1,0 +1,80 @@
+I want you to read several `.mojo` files and generate Python bindings for
+specific functions in that file as a single Python module.
+Analyze each of the following `.mojo` files:
+
+- `kernels/make_4d_causal_mask.mojo`
+- `kernels/apply_rotary_emb.mojo`
+
+DO NOT INSPECT any other files except the `.mojo` files listed above.
+You are only to inspect these files.
+
+In each of the `.mojo` files listed above, look for functions annotated with
+`@export`. These are the functions for which you will generate Python bindings.
+Mojo is a new programming language but the argument types map trivially to C.
+These are the argument type mappings:
+
+- Any `tl.Ptr` maps to a `void *`
+- `UInt32` -> `unsigned`
+- `Int32` -> `int`
+- `Float32` -> `float`
+- `Float64` -> `double`
+
+For example, given the following function,
+
+```
+@export
+fn generate_bindings_for_this_function(a: tl.Ptr[BFloat16], b: Int, c: UInt32):
+```
+
+The equivalent C function signature is
+
+```
+void generate_bindings_for_this_function(void *a, int b, unsigned c);
+```
+
+The function return types will always be `void`.
+
+You are then going to generate 2 things:
+
+1. Python bindings for all of the generated `.so` files by creating
+   a C file that defines the Python bindings. The name of the Python module should
+   be `bindings`. The Python module will dlopen each of the generated `.so` files
+   and use `dlsym` to get function pointers to the exported functions upon
+   initialization. Note that `void *` arguments are expected to be passed from
+   Python as raw pointers. Put this C code in a file named `bindings.c` in the
+   current working directory.
+
+For the generated C file, ensure the following:
+
+1. Errors are correctly propagated to Python exceptions using `PyErr_Format`.
+   DO NOT USE `fprintf` to print errors. Propagate them through Python exceptions
+   so that Python code receives ImportErrors.
+2. Assume the user can import the generated `bindings` directory from anywhere.
+   The directory that contains the `.so` files generated from the `.mojo`
+   files will be the `LD_LIBRARY_PATH`. That means the filename passed to `dlopen`
+   should look like `dlopen("file.so")`.
+3. When generating the format string to `PyArg_ParseTuple`, make sure the format
+   string is generated without any spaces between the format characters.
+
+IF THE `bindings.c` file already exists. OVERWRITE IT ONCE.
+
+Then generate a bash script that does the following:
+
+1. Compile each `.mojo` file listed above into a shared library, or `.so` file.
+   Do this using the command `magic run mojo build --emit shared-lib <FILE_PATH>`.
+   This generates an `.so` file in the current working directory with the same
+   file name as the `.mojo` file.
+2. Compile the C file into a Python native module using `gcc`. Save it as
+   `bindings.so` in the current working directory. The `gcc` command should
+   be `gcc -shared -fPIC $(python3-config --includes) bindings.c -o bindings.so -ldl`
+
+Place this bash script in a file called `build_bindings.sh` in the current working
+directory.
+
+IF THE `build_bindings.sh` file already exists. OVERWRITE IT ONCE.
+
+Once you have generated both of these files and and written them to the
+directory using `apply_patch` and completed your tasks. STOP.
+
+DO NOT USE `git`. DO NOT USE `git.` STOP IMMEDIATELY when you have finished generating both files.
+STOP IMMEDIATELY when you have finished generating both files.
